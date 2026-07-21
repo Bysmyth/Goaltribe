@@ -406,6 +406,50 @@
 
         // App Starten
         initApp();
-    </script>
+    </script>      
+
+<!-- Firebase SDKs als ES-Module laden -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    onSnapshot 
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // Deine echten Firebase-Daten
+  const firebaseConfig = {
+    apiKey: "AIzaSyBxLn_b8s5DHaa7uMfBghyaC-dnHbl55yY",
+    authDomain: "goaltribe-67.firebaseapp.com",
+    projectId: "goaltribe-67",
+    storageBucket: "goaltribe-67.firebasestorage.app",
+    messagingSenderId: "120927875905",
+    appId: "1:120927875905:web:3698affe6dfbcfd47c67c0",
+    measurementId: "G-DPZYV23GHX"
+  };
+
+  // Firebase & Datenbank initialisieren
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  console.log("GoalTribe ist erfolgreich mit Firebase verbunden! 🔥");
+
+  // Funktion zum Speichern von Habits (global verfügbar machen)
+  window.addHabitToFirebase = async function(title) {
+    if (!title || !title.trim()) return;
+    try {
+      const docRef = await addDoc(collection(db, "habits"), {
+        title: title,
+        createdAt: new Date(),
+        completed: false
+      });
+      console.log("Habit gespeichert mit ID:", docRef.id);
+    } catch (e) {
+      console.error("Fehler beim Speichern:", e);
+    }
+  };
+</script>
+    
 </body>
 </html>
