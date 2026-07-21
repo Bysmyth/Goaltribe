@@ -408,17 +408,17 @@
         initApp();
     </script>      
 
-<!-- Firebase SDKs als ES-Module laden -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { 
     getFirestore, 
     collection, 
     addDoc, 
-    onSnapshot 
+    onSnapshot,
+    deleteDoc,
+    doc 
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // Deine echten Firebase-Daten
   const firebaseConfig = {
     apiKey: "AIzaSyBxLn_b8s5DHaa7uMfBghyaC-dnHbl55yY",
     authDomain: "goaltribe-67.firebaseapp.com",
@@ -429,27 +429,39 @@
     measurementId: "G-DPZYV23GHX"
   };
 
-  // Firebase & Datenbank initialisieren
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  console.log("GoalTribe ist erfolgreich mit Firebase verbunden! 🔥");
-
-  // Funktion zum Speichern von Habits (global verfügbar machen)
+  // 1. Funktion zum Hinzufügen (für deinen Button/Eingabefeld)
   window.addHabitToFirebase = async function(title) {
     if (!title || !title.trim()) return;
     try {
-      const docRef = await addDoc(collection(db, "habits"), {
-        title: title,
-        createdAt: new Date(),
-        completed: false
+      await addDoc(collection(db, "habits"), {
+        title: title.trim(),
+        streak: 0,
+        createdAt: new Date()
       });
-      console.log("Habit gespeichert mit ID:", docRef.id);
+      console.log("In Firebase gespeichert!");
     } catch (e) {
-      console.error("Fehler beim Speichern:", e);
+      console.error("Fehler beim Speichern in Firebase:", e);
     }
   };
+
+  // 2. Echtzeit-Synchro: Sobald sich in Firebase etwas ändert, wird die App aktualisiert
+  onSnapshot(collection(db, "habits"), (snapshot) => {
+    const habitsFromDB = [];
+    snapshot.forEach((doc) => {
+      habitsFromDB.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Falls du in deiner App ein globales Array/Render-Funktion nutzt:
+    if (typeof render === 'function') {
+      window.habits = habitsFromDB;
+      render();
+    }
+  });
 </script>
+
     
 </body>
 </html>
