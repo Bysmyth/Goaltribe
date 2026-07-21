@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoalTribe - Natur & Verbindung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sage: { 50: '#f4f7f4', 100: '#e3eae3', 500: '#738a73', 600: '#586f58', 700: '#465846', 800: '#384638', 900: '#2d382d' },
+                        bamboo: { 100: '#f2f5e8', 400: '#a3c663', 500: '#8ba858', 600: '#6f8b3c' },
+                        earth: { 50: '#faf7f2', 100: '#f3ece2', 200: '#e5d7c4', 800: '#5c4a3e' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #faf7f2; }
+    </style>
+</head>
+<body class="text-earth-800 min-h-screen pb-16">
+
+    <!-- Header im Bambus-Design -->
+    <header class="bg-sage-700 text-earth-50 p-4 shadow-md sticky top-0 z-50 border-b border-sage-600">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-sage-800 rounded-lg p-1.5 flex items-center justify-center shadow-inner border border-sage-600">
+                    <svg viewBox="0 0 24 24" class="w-full h-full text-bamboo-400 fill-current">
+                        <rect x="7" y="3" width="3" height="18" rx="1.5"/>
+                        <rect x="14" y="6" width="3" height="15" rx="1.5"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide leading-none">GoalTribe</h1>
+                    <p class="text-[10px] text-sage-100 opacity-80 pt-0.5">Gemeinsam wachsen</p>
+                </div>
+            </div>
+
+            <!-- Eigenen Namen eingeben -->
+            <div class="flex items-center gap-1.5 bg-sage-800/60 px-3 py-1.5 rounded-full border border-sage-600">
+                <i class="fa-solid fa-leaf text-xs text-bamboo-400"></i>
+                <input type="text" id="my-name-input" value="Mein Name" onchange="updateMyName(this.value)" class="bg-transparent text-xs font-medium focus:outline-none w-20 text-earth-50">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-5">
+
+        <!-- Kalender & Datumswähler -->
+        <section class="bg-earth-100 p-3 rounded-2xl border border-earth-200 flex items-center justify-between shadow-sm">
+            <button onclick="changeDate(-1)" class="w-8 h-8 rounded-full bg-white text-sage-700 shadow-sm flex items-center justify-center hover:bg-sage-50 transition">
+                <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+
+            <div class="text-center">
+                <div id="selected-date-display" class="font-bold text-sm text-sage-900">Heute</div>
+                <div id="selected-date-sub" class="text-[10px] text-sage-600 font-medium">--</div>
+            </div>
+
+            <div class="flex items-center gap-1">
+                <button onclick="resetToToday()" class="text-[10px] bg-sage-600 text-white px-2.5 py-1 rounded-md hover:bg-sage-700 transition font-medium">Heute</button>
+                <button onclick="changeDate(1)" class="w-8 h-8 rounded-full bg-white text-sage-700 shadow-sm flex items-center justify-center hover:bg-sage-50 transition">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Wegbegleiter einladen -->
+        <section class="bg-white p-4 rounded-2xl shadow-sm border border-earth-200/60 space-y-3">
+            <h3 class="font-bold text-sage-800 text-xs tracking-wider uppercase flex items-center gap-2">
+                <i class="fa-solid fa-user-plus text-bamboo-600"></i> Freund hinzufügen
+            </h3>
+            <div class="flex gap-2">
+                <input type="text" id="new-member-name" placeholder="Name des Freundes (z.B. Lisa)" class="w-full bg-earth-50 border border-earth-200 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-sage-500">
+                <button onclick="addMember()" class="bg-sage-700 hover:bg-sage-800 text-earth-50 font-medium text-xs px-4 py-2.5 rounded-xl transition shadow-sm whitespace-nowrap">
+                    Hinzufügen
+                </button>
+            </div>
+        </section>
+
+        <!-- Gruppenübersicht / Mitglieder-Karten -->
+        <section class="space-y-4">
+            <h2 class="text-base font-bold text-sage-900 flex items-center gap-2">
+                <i class="fa-solid fa-users text-sage-600"></i> Zirkel-Fortschritt
+            </h2>
+
+            <div id="members-container" class="space-y-4">
+                <!-- Dynamische Karten -->
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let currentDate = new Date();
+
+        function getFormattedDateKey(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // Grundzustand mit manuellem Streak-Counter pro Aktivität
+        let state = {
+            members: [
+                {
+                    id: 1,
+                    name: "Mein Name",
+                    isMe: true,
+                    habits: [
+                        { id: 101, name: "Russisch lernen", streak: 5, history: {} },
+                        { id: 102, name: "30 Min. Sport", streak: 0, history: {} }
+                    ]
+                },
+                {
+                    id: 2,
+                    name: "Alex",
+                    isMe: false,
+                    habits: [
+                        { id: 201, name: "Klavier spielen", streak: 12, history: {} }
+                    ]
+                }
+            ]
+        };
+
+        function updateDateHeader() {
+            const dateKey = getFormattedDateKey(currentDate);
+            const todayKeyStr = getFormattedDateKey(new Date());
+
+            const displayEl = document.getElementById("selected-date-display");
+            const subEl = document.getElementById("selected-date-sub");
+
+            subEl.innerText = currentDate.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            if (dateKey === todayKeyStr) {
+                displayEl.innerText = "Heute";
+            } else {
+                const diffTime = currentDate.getTime() - new Date().setHours(0,0,0,0);
+                const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+                if (diffDays === -1) displayEl.innerText = "Gestern";
+                else if (diffDays === 1) displayEl.innerText = "Morgen";
+                else displayEl.innerText = currentDate.toLocaleDateString('de-DE', { weekday: 'long' });
+            }
+        }
+
+        function render() {
+            updateDateHeader();
+            const dateKey = getFormattedDateKey(currentDate);
+            const container = document.getElementById("members-container");
+            container.innerHTML = "";
+
+            state.members.forEach(member => {
+                const card = document.createElement("div");
+                card.className = "bg-white rounded-2xl p-4 shadow-sm border border-earth-200/80 space-y-3";
+
+                let habitsHTML = member.habits.map(habit => {
+                    const status = habit.history[dateKey] || "pending";
+                    const isDone = status === 'done';
+                    const isFailed = status === 'failed';
+
+                    return `
+                        <div class="p-2.5 rounded-xl bg-earth-50/60 border border-earth-200/50 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-earth-800">${habit.name}</span>
+                                <!-- Schlichter Streak Counter -->
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md ${habit.streak > 0 ? 'bg-amber-100 text-amber-800' : 'bg-earth-100 text-earth-800 opacity-60'}">
+                                    🔥 ${habit.streak}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="setHabitStatus(${member.id}, ${habit.id}, 'done')" class="w-8 h-8 rounded-lg flex items-center justify-center transition border ${isDone ? 'bg-sage-600 text-white border-sage-600 shadow-sm' : 'bg-white text-earth-200 border-earth-200 hover:text-sage-600'}">
+                                    <i class="fa-solid fa-arrow-up text-xs"></i>
+                                </button>
+                                <button onclick="setHabitStatus(${member.id}, ${habit.id}, 'failed')" class="w-8 h-8 rounded-lg flex items-center justify-center transition border ${isFailed ? 'bg-rose-700 text-white border-rose-700 shadow-sm' : 'bg-white text-earth-200 border-earth-200 hover:text-rose-600'}">
+                                    <i class="fa-solid fa-arrow-down text-xs"></i>
+                                </button>
+                                <button onclick="deleteHabit(${member.id}, ${habit.id})" class="w-6 h-6 text-earth-200 hover:text-rose-500 transition ml-1">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+                if (member.habits.length === 0) {
+                    habitsHTML = `<p class="text-xs text-sage-500 italic py-1">Keine Aktivitäten eintragen.</p>`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-earth-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center text-xs font-bold">
+                                ${member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <input type="text" value="${member.name}" onchange="updateMemberName(${member.id}, this.value)" class="font-bold text-sm text-sage-900 focus:outline-none bg-transparent border-b border-transparent focus:border-sage-500">
+                            ${member.isMe ? '<span class="text-[9px] bg-bamboo-100 text-bamboo-600 font-bold px-1.5 py-0.5 rounded-full">DU</span>' : ''}
+                        </div>
+                        ${!member.isMe ? `<button onclick="deleteMember(${member.id})" class="text-earth-200 hover:text-rose-500 text-xs"><i class="fa-solid fa-user-minus"></i></button>` : ''}
+                    </div>
+
+                    <div class="flex gap-1.5 pt-1">
+                        <input type="text" id="input-habit-${member.id}" placeholder="Aktivität hinzufügen..." class="w-full bg-earth-50 border border-earth-200 rounded-xl p-2 text-xs focus:outline-none focus:ring-1 focus:ring-sage-500">
+                        <button onclick="addHabitToMember(${member.id})" class="bg-sage-700 hover:bg-sage-800 text-white text-xs px-3 rounded-xl transition">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-1.5 pt-1">
+                        ${habitsHTML}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Status setzen & einfachen Streak-Zähler anpassen
+        function setHabitStatus(memberId, habitId, targetStatus) {
+            const dateKey = getFormattedDateKey(currentDate);
+            const member = state.members.find(m => m.id === memberId);
+            if (member) {
+                const habit = member.habits.find(h => h.id === habitId);
+                if (habit) {
+                    const currentStatus = habit.history[dateKey];
+
+                    if (currentStatus === targetStatus) {
+                        // Zurücksetzen
+                        habit.history[dateKey] = "pending";
+                        if (targetStatus === 'done') habit.streak = Math.max(0, habit.streak - 1);
+                    } else {
+                        // Status aktivieren
+                        habit.history[dateKey] = targetStatus;
+                        if (targetStatus === 'done') {
+                            habit.streak += 1;
+                        } else if (targetStatus === 'failed') {
+                            habit.streak = 0; // Reset bei Fehlschlag
+                        }
+                    }
+                }
+            }
+            render();
+        }
+
+        function changeDate(offset) {
+            currentDate.setDate(currentDate.getDate() + offset);
+            render();
+        }
+
+        function resetToToday() {
+            currentDate = new Date();
+            render();
+        }
+
+        function updateMyName(newName) {
+            if (!newName.trim()) return;
+            const me = state.members.find(m => m.isMe);
+            if (me) me.name = newName.trim();
+            render();
+        }
+
+        function updateMemberName(memberId, newName) {
+            if (!newName.trim()) return;
+            const member = state.members.find(m => m.id === memberId);
+            if (member) member.name = newName.trim();
+            if (member.isMe) document.getElementById("my-name-input").value = newName.trim();
+            render();
+        }
+
+        function addMember() {
+            const input = document.getElementById("new-member-name");
+            const name = input.value.trim();
+            if (!name) return;
+
+            state.members.push({ id: Date.now(), name: name, isMe: false, habits: [] });
+            input.value = "";
+            render();
+        }
+
+        function deleteMember(memberId) {
+            state.members = state.members.filter(m => m.id !== memberId);
+            render();
+        }
+
+        function addHabitToMember(memberId) {
+            const input = document.getElementById(`input-habit-${memberId}`);
+            if (!input) return;
+            const name = input.value.trim();
+            if (!name) return;
+
+            const member = state.members.find(m => m.id === memberId);
+            if (member) {
+                member.habits.push({ id: Date.now(), name: name, streak: 0, history: {} });
+            }
+            input.value = "";
+            render();
+        }
+
+        function deleteHabit(memberId, habitId) {
+            const member = state.members.find(m => m.id === memberId);
+            if (member) {
+                member.habits = member.habits.filter(h => h.id !== habitId);
+            }
+            render();
+        }
+
+        // Initiales Rendern
+        render();
+    </script>
+</body>
+</html>
