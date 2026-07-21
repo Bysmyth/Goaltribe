@@ -330,24 +330,19 @@
             });
         }
 
-        function addHabit() {
-            const input = document.getElementById("input-new-habit");
-            if (!input) return;
-            const name = input.value.trim();
-            if (!name) return;
+      function addHabit() {
+  const input = document.getElementById("input-new-habit");
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) return;
 
-            const roomData = getRoomState();
-            if (roomData.members[myUserId]) {
-                roomData.members[myUserId].habits.push({
-                    id: "h_" + Date.now(),
-                    name: name,
-                    streak: 0,
-                    history: {}
-                });
-                saveRoomState(roomData);
-            }
-            input.value = "";
-        }
+  // Sendet die Aktivität direkt an Firebase
+  if (window.addHabitToFirebase) {
+    window.addHabitToFirebase(name);
+  }
+
+  input.value = "";
+}
 
         function setHabitStatus(habitId, targetStatus) {
             const dateKey = getFormattedDateKey(currentDate);
